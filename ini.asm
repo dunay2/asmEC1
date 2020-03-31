@@ -1,6 +1,6 @@
 section .data               
 ;Cambiar Nombre y Apellido por vuestros datos.
-developer db "_Nombre_ _Apellido1_",0
+developer db "_DIEGO_ _RIOS_",0
 
 ;Constantes que también están definidas en C.
 DimMatrix    equ 4      
@@ -226,7 +226,49 @@ showNumberP1:
    push rbp
    mov  rbp, rsp
    
+    push ax ;n
+   push rbx ;divisor
+   push rdx; resto
+   push si; i
    
+   ;inicializacion
+   mov eax, DWORD[number];n=number
+   mov sil,0
+
+   cmp eax,999999
+   jle bucle; if (n > 999999) n = 999999
+   mov eax, 999999; eax valor n                             
+   
+   bucle: cmp sil, 6 ; hasta i=5
+      je fin_subrutina; acaba si es 6   
+      mov BYTE[charac],' '; limpiar
+      cmp eax ,0; elude bloque if si n es <=0 
+
+      jle fin_if ;if (n>0)   
+         ;dividendo es 32 bits fuente es de 16 bits: AX = DX:AX / fuente, DX = DX:AX mod fuente
+         mov edx, 0; limpiar
+         mov ebx,10 ; asigna divisor
+         ; EAX / EBX
+         div ebx 
+         ;el cociente queda en EAX
+         ;el resto en el primer bit de DX(dl)
+         ; Sumar 0 al residuo (Convertir a ASCII)  
+         add dl,'0'
+         mov BYTE[charac], dl
+      fin_if:
+   
+      call gotoxyP1    
+      call printchP1
+      dec DWORD[colScreen];colScreen--;
+      inc sil;i++
+   jmp bucle
+
+   fin_subrutina:
+
+   pop si
+   pop rdx
+   pop bx
+   pop ax
    
    mov rsp, rbp
    pop rbp
@@ -259,6 +301,66 @@ updateBoardP1:
    mov  rbp, rsp
    
    
+push rax; dividendo/cociente eax
+push rbx; divisor ebx
+push rcx; rowScreenAux ecx 
+push rdx; resto 
+push rsi; contador 
+push rdi; gestor matriz
+push r8; colScreenAux 
+
+
+mov eax,0;
+mov ecx, 10 ;rowScreenAux = 10;  
+mov r8d,17 ; colScreenAux = 17;
+mov esi,0;
+mov rdi,0
+
+fillmatrix:            
+         
+      mov di, WORD[m+esi*2]     
+      mov DWORD[number], edi ; number = m[i][j];      
+      mov DWORD[rowScreen],ecx ;rowScreen = rowScreenAux;
+      mov DWORD[colScreen],r8d; colScreen = colScreenAux;                      
+      call showNumberP1;       
+      add r8d,9; colScreenAux = colScreenAux + 9;                  
+      inc sil;  i++
+    ;bucle exterior mod 4
+
+      mov eax,esi ;se prepara el dividendo      
+      mov edx, 0; limpiar el resto
+      mov ebx,4 ; asigna divisor
+      ; EAX / EBX
+      div ebx 
+      cmp dl,0 ;el resto en el primer bit de DX(dl)
+      jg fillmatrix
+      ;el cociente queda en EAX
+      
+;bucle_exterior
+     mov r8d,17 ; colScreenAux = 17;
+     add ecx,2 ;  rowScreenAux+=2
+    
+    cmp sil,SizeMatrix; si ha recorrido la matriz, acaba
+    jl fillmatrix
+
+;fin_subrutina
+   
+   mov eax,DWORD[score];   number = score;
+   mov DWORD[number],eax
+   mov DWORD[rowScreen],18; rowScreen = 18;
+   mov DWORD[colScreen],26; colScreen = 26;
+   call showNumberP1;   
+   mov DWORD[rowScreen],18; rowScreen = 18;
+   mov DWORD[colScreen],26; colScreen = 26;
+   call gotoxyP1;
+
+pop r8;
+pop rdi; gestor matriz
+pop rsi; contador 
+pop rdx; resto 
+pop rcx; rowScreenAux ecx 
+pop rbx; colScreenAux ebx
+pop rax; cociente eax
    
    mov rsp, rbp
    pop rbp
@@ -291,7 +393,45 @@ rotateMatrixRP1:
    push rbp
    mov  rbp, rsp
    
+   push rax ; contador 0 hasta 15
+push rbx ; contador j  3 hasta 0 para calculo de transposicion
+push rcx ; contador k posicion ciclo 0-3 
+push rdx ; contenido aux
+push rsi; calculo direccion
+
+   mov eax, 0
+   mov rbx, DimMatrix
+   mov rsi,0
+
+   reset_k:
+   mov cx,0
+   dec bx ; se comienza en 3
+   blucle_k:
+
+   ;copiar matriz
+   mov dx, WORD[m+eax*2] ; copiar contenido  en dx
+   mov  si,cx ;  calcuar desplazamiento
+   imul si,DimMatrix; 
+   add  si, bx ; 
+   mov [mRotated +esi*2],dx; copiar contenido a posicion matriz  
    
+   inc ax
+   inc cx
+   cmp eax,SizeMatrix
+   je fin
+   cmp cx,DimMatrix
+   je reset_k 
+   jmp blucle_k
+   fin:  
+
+   call copyMatrixP1
+
+   pop rsi
+   pop rdx
+   pop rcx
+   pop rbx
+   pop rax
+   ;***
    
    mov rsp, rbp
    pop rbp
@@ -315,6 +455,21 @@ copyMatrixP1:
    push rbp
    mov  rbp, rsp
    
+   ;***************
+ push rax; aux
+ push rbx; indice matriz
+
+   mov ebx, 0 
+   copiar:
+   mov ax, WORD[mRotated+ebx*2]     
+   mov WORD[m+ebx*2],ax 
+   inc bx
+   cmp bx, SizeMatrix
+   jl copiar
+
+   pop rbx
+   pop rax
+;*************
    
    
    mov rsp, rbp
@@ -349,6 +504,91 @@ shiftNumbersRP1:
    push rbp
    mov  rbp, rsp
 
+;***
+push rax ; i
+push rbx ; j 
+push rcx ; k
+push rsi ;aux
+push rdi; aux2
+push rdx ; valor matriz
+
+;inicializacion 
+    mov rax, DimMatrix
+    dec rax ; se usa DimMatrix-1
+    mov rbx, rax
+    mov rcx,0
+    mov rsi,0
+    mov rdi,0
+    mov rdx,0
+
+out_iter:
+    inner_iter:
+        ;if (m[i][j] == 0)
+        ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+        mov si,ax    ;<-- 3
+        imul si,4    ;<-- 3x4=12
+        add si,bx    ;<-- 12 +3=15
+        mov dx,word[m+esi*2]
+        cmp word[m+esi*2],0 ;
+        
+        jne endif_ij_not_0; jump if (m[i][j] != 0) 
+            mov cx,bx      
+            dec cx ;k = j-1;
+            k_while:
+                cmp cx,0      ;while (k>=0 && m[i][k]==0) k--;
+                jl end_k_while  ;1. k<0 salta        
+                ;ubicar la posicion en la matriz columna+4*fila
+                mov si,ax   ; guardamos la fila
+                imul si,4     ;la multiplicamos x 4
+                add si,cx  
+                cmp word[m+esi*2],0  ;2. m[i][k]==0)
+
+                jne end_k_while ; k>=0 pero m[i][k]!=0
+                dec cx        ;k--
+                jmp k_while
+            end_k_while:
+            ;if (k==-1)
+            cmp cx,-1  
+            jne else_k_eq
+                mov bx,0 ;  j=0
+                jmp endif_ij_not_0
+            else_k_eq: ;m[i][j]=m[i][k];
+                ;se calcula m[i][k] 
+                mov si,ax   ; guardamos la fila
+                imul si,4     ;la multiplicamos x 4
+                add si,cx  
+                mov di,word[m+esi*2]   ; se guarda el valor de m[i][k] en di
+                      ; se calcula mov m[i][j]  
+                mov si,ax   ; guardamos la fila
+                imul si,4   ;la multiplicamos x 4
+                add si,bx  
+                mov word[m+esi*2],di ; m[i][j]=di 
+
+                ;m[i][k]= 0; 
+                mov si,ax   ; guardamos la fila
+                imul si,4     ;la multiplicamos x 4
+                add si,cx  
+                mov word[m+esi*2],0  ;2. m[i][k]==0)
+                mov BYTE[state],'2' ;state='2';
+        endif_ij_not_0:
+
+        dec bx
+        cmp bx,0
+        jg inner_iter
+    fin_inner_iter:
+    mov bx,DimMatrix
+    dec bx
+    dec ax
+    cmp ax,0
+    jge out_iter
+fin_out_iter:
+pop rdx
+pop rdi
+pop rsi 
+pop rcx
+pop rbx
+pop rax
+    ;********** 
    
    
    mov rsp, rbp
@@ -387,7 +627,79 @@ addPairsRP1:
    push rbp
    mov  rbp, rsp
 
-          
+          ;***
+   push rax ; i
+   push rbx ; j 
+   push rcx ; p
+   push rsi ;aux
+   push rdi; aux2
+
+   ;inicializacion 
+   mov rax, DimMatrix
+   dec rax ; se usa DimMatrix-1
+   mov rbx, rax
+   mov ecx,0
+   mov rsi,0
+   mov rdi,0; 
+
+   out_iterPairs:
+      inner_iterPairs:
+            ;enunciar condicion 1 if (m[i][j] != 0)        
+            mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+            imul si,DimMatrix    
+            add si,bx    
+            mov di,word[m+esi*2] ; m[i][j]
+            cmp di,0 ; (m[i][j] <--> 0)
+            ;enunciar condicion 1
+            je eif_ij_not_0; jump if not (m[i][j] != 0) 
+            ;enunciar condicion 2   (m[i][j]==m[i][j-1]
+            mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+            imul si,DimMatrix    
+            add si,bx    
+            dec si  ; la comparación es con el elemento anterior
+            cmp di,word[m+esi*2]
+            jne eif_ij_not_0 ; si no se cumple la condicion 2 saltar  
+                     
+                  imul di,2      
+                  mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+                  imul si,DimMatrix    
+                  add si,bx    
+                  mov word[m+esi*2],di   ; asignar m[i][j]  = m[i][j]*2;
+               
+                  mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+                  imul si,DimMatrix    
+                  add si,bx    
+                  dec si  ; asignacion sobre elemento anterior
+                  mov word[m+esi*2],0   ; m[i][j-1]= 0;
+
+                  add ecx,edi; p = p + m[i][j];
+               
+         eif_ij_not_0:
+
+         dec bx
+         cmp bx,0
+         jg inner_iterPairs
+      fin_inner_iterPairs:
+      mov bx,DimMatrix
+      dec bx
+      dec ax
+      cmp ax,0
+      jge out_iterPairs
+   fin_out_iterPairs:
+
+   cmp ecx,0 ; compare p
+   jle end; if (p > 0) {
+      mov BYTE[state],'2';   state = '2';
+      add dword[score],ecx ;score = score + p;
+         
+   end:
+
+   pop rdi
+   pop rsi 
+   pop rcx
+   pop rbx
+   pop rax 
+    ;**********  
    
    mov rsp, rbp
    pop rbp
