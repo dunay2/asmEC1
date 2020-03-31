@@ -512,6 +512,13 @@ push rsi ;aux
 push rdi; aux2
 push rdx ; valor matriz
 
+push rax ; i
+push rbx ; j 
+push rcx ; k
+push rsi ;aux indice i
+push rdi; aux2
+push rdx ; valor matriz
+
 ;inicializacion 
     mov rax, DimMatrix
     dec rax ; se usa DimMatrix-1
@@ -520,56 +527,56 @@ push rdx ; valor matriz
     mov rsi,0
     mov rdi,0
     mov rdx,0
-
+;******
 out_iter:
     inner_iter:
         ;if (m[i][j] == 0)
         ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+
+        ;;****************UTILIZA 
+        ;;;RDX DX PARA GUARDAR EL VALOR DE LA MATRIZ
+        ;;;RSI SI como indice matriz AUXILIAR de RAX
+        ;;;;;
         mov si,ax    ;<-- 3
         imul si,4    ;<-- 3x4=12
         add si,bx    ;<-- 12 +3=15
         mov dx,word[m+esi*2]
         cmp word[m+esi*2],0 ;
         
+        ;;****************UTILIZA 
+        ;;;RCX cx como valor k
+        ;;;RSI SI 
+        ;;;;;
+
         jne endif_ij_not_0; jump if (m[i][j] != 0) 
             mov cx,bx      
             dec cx ;k = j-1;
             k_while:
                 cmp cx,0      ;while (k>=0 && m[i][k]==0) k--;
                 jl end_k_while  ;1. k<0 salta        
-                ;ubicar la posicion en la matriz columna+4*fila
-                mov si,ax   ; guardamos la fila
-                imul si,4     ;la multiplicamos x 4
-                add si,cx  
+                ;ubicar la posicion en la matriz columna+4*fila                
+                call nextElement
                 cmp word[m+esi*2],0  ;2. m[i][k]==0)
 
                 jne end_k_while ; k>=0 pero m[i][k]!=0
                 dec cx        ;k--
                 jmp k_while
-            end_k_while:
-            ;if (k==-1)
-            cmp cx,-1  
+            end_k_while:            
+            cmp cx,-1  ;if (k==-1)
             jne else_k_eq
                 mov bx,0 ;  j=0
                 jmp endif_ij_not_0
-            else_k_eq: ;m[i][j]=m[i][k];
-                ;se calcula m[i][k] 
-                mov si,ax   ; guardamos la fila
-                imul si,4     ;la multiplicamos x 4
-                add si,cx  
+            else_k_eq: ;m[i][j]=m[i][k]; ;se calcula m[i][k]                 
+                call nextElement
                 mov di,word[m+esi*2]   ; se guarda el valor de m[i][k] en di
                       ; se calcula mov m[i][j]  
                 mov si,ax   ; guardamos la fila
                 imul si,4   ;la multiplicamos x 4
                 add si,bx  
-                mov word[m+esi*2],di ; m[i][j]=di 
-
-                ;m[i][k]= 0; 
-                mov si,ax   ; guardamos la fila
-                imul si,4     ;la multiplicamos x 4
-                add si,cx  
+                mov word[m+esi*2],di ; m[i][j]=di                 
+                call nextElement;m[i][k]= 0; 
                 mov word[m+esi*2],0  ;2. m[i][k]==0)
-                mov BYTE[state],'2' ;state='2';
+                mov BYTE[state],BYTE '2' ;state='2';
         endif_ij_not_0:
 
         dec bx
@@ -582,20 +589,28 @@ out_iter:
     cmp ax,0
     jge out_iter
 fin_out_iter:
+
 pop rdx
 pop rdi
 pop rsi 
 pop rcx
 pop rbx
 pop rax
-    ;********** 
+;******
    
    
    mov rsp, rbp
    pop rbp
    ret
-      
+;******
+  nextElement:
 
+                mov si,ax   ; guardamos la fila
+                imul si,DimMatrix     ;la multiplicamos x 4
+                add si,cx  
+
+ret    
+;******
 ;;;;;  
 ; Emparejar números iguales desde la derecha de la matriz (m) y acumular 
 ; los puntos en el marcador sumando los puntos de las parejas que se hagan.
