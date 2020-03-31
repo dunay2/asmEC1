@@ -642,7 +642,7 @@ addPairsRP1:
    push rbp
    mov  rbp, rsp
 
-          ;***
+  ;******
    push rax ; i
    push rbx ; j 
    push rcx ; p
@@ -668,25 +668,16 @@ addPairsRP1:
             ;enunciar condicion 1
             je eif_ij_not_0; jump if not (m[i][j] != 0) 
             ;enunciar condicion 2   (m[i][j]==m[i][j-1]
-            mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
-            imul si,DimMatrix    
-            add si,bx    
-            dec si  ; la comparación es con el elemento anterior
+            call prevPointer
             cmp di,word[m+esi*2]
             jne eif_ij_not_0 ; si no se cumple la condicion 2 saltar  
-                     
                   imul di,2      
                   mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
                   imul si,DimMatrix    
                   add si,bx    
-                  mov word[m+esi*2],di   ; asignar m[i][j]  = m[i][j]*2;
-               
-                  mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
-                  imul si,DimMatrix    
-                  add si,bx    
-                  dec si  ; asignacion sobre elemento anterior
+                  mov word[m+esi*2],di   ; asignar m[i][j]  = m[i][j]*2;               
+                  call prevPointer
                   mov word[m+esi*2],0   ; m[i][j-1]= 0;
-
                   add ecx,edi; p = p + m[i][j];
                
          eif_ij_not_0:
@@ -714,12 +705,17 @@ addPairsRP1:
    pop rcx
    pop rbx
    pop rax 
-    ;**********  
-   
+;*********  
    mov rsp, rbp
    pop rbp
    ret
    
+prevPointer:
+   mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+   imul si,DimMatrix    
+   add si,bx    
+   dec si  ; asignacion sobre elemento anterior
+ret
 
 ;;;;;; 
 ; Esta subrutina se da hecha. NO LA PODÉIS MODIFICAR.
