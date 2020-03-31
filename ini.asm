@@ -301,50 +301,50 @@ updateBoardP1:
    mov  rbp, rsp
    
    
-push rax; dividendo/cociente eax
-push rbx; divisor ebx
-push rcx; rowScreenAux ecx 
-push rdx; resto 
-push rsi; contador 
-push rdi; gestor matriz
-push r8; colScreenAux 
+  ;************
+   push rax; dividendo/cociente eax
+   push rbx; divisor ebx
+   push rcx; rowScreenAux ecx 
+   push rdx; resto 
+   push rsi; contador 
+   push rdi; gestor matriz
+   push r8; colScreenAux 
 
+   mov eax,0;
+   mov ecx, 8 ;rowScreenAux = 10;  
+   mov esi,0;
+   mov rdi,0
 
-mov eax,0;
-mov ecx, 10 ;rowScreenAux = 10;  
-mov r8d,17 ; colScreenAux = 17;
-mov esi,0;
-mov rdi,0
+   extLoop:
 
-fillmatrix:            
-         
-      mov di, WORD[m+esi*2]     
+   mov r8d,17 ; colScreenAux = 17;
+   add ecx,2 ;  rowScreenAux+=2
+   cmp sil,SizeMatrix; si ha recorrido la matriz, acaba
+   je end_fillMatrix
+
+   fillMatrix:            
+      
+      mov di, WORD[m+esi*2]; 
       mov DWORD[number], edi ; number = m[i][j];      
+         
       mov DWORD[rowScreen],ecx ;rowScreen = rowScreenAux;
-      mov DWORD[colScreen],r8d; colScreen = colScreenAux;                      
+      mov DWORD[colScreen],r8d; colScreen = colScreenAux;       
+
       call showNumberP1;       
       add r8d,9; colScreenAux = colScreenAux + 9;                  
       inc sil;  i++
-    ;bucle exterior mod 4
 
+      ;bucle exterior mod DimMatrix check de salto
       mov eax,esi ;se prepara el dividendo      
       mov edx, 0; limpiar el resto
-      mov ebx,4 ; asigna divisor
-      ; EAX / EBX
-      div ebx 
-      cmp dl,0 ;el resto en el primer bit de DX(dl)
-      jg fillmatrix
-      ;el cociente queda en EAX
+      mov ebx,DimMatrix ; asigna divisor      
+      div ebx ; EAX / EBX
+      cmp dl,0 ;el resto en el primer bit de DX(dl)el cociente queda en EAX   
+      jg fillMatrix
+      jmp extLoop 
       
-;bucle_exterior
-     mov r8d,17 ; colScreenAux = 17;
-     add ecx,2 ;  rowScreenAux+=2
-    
-    cmp sil,SizeMatrix; si ha recorrido la matriz, acaba
-    jl fillmatrix
-
-;fin_subrutina
-   
+   end_fillMatrix:
+      
    mov eax,DWORD[score];   number = score;
    mov DWORD[number],eax
    mov DWORD[rowScreen],18; rowScreen = 18;
@@ -354,14 +354,14 @@ fillmatrix:
    mov DWORD[colScreen],26; colScreen = 26;
    call gotoxyP1;
 
-pop r8;
-pop rdi; gestor matriz
-pop rsi; contador 
-pop rdx; resto 
-pop rcx; rowScreenAux ecx 
-pop rbx; colScreenAux ebx
-pop rax; cociente eax
-   
+   pop r8;
+   pop rdi; gestor matriz
+   pop rsi; contador 
+   pop rdx; resto 
+   pop rcx; rowScreenAux ecx 
+   pop rbx; colScreenAux ebx
+   pop rax; cociente eax
+   ;****
    mov rsp, rbp
    pop rbp
    ret
