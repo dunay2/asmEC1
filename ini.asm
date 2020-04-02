@@ -226,7 +226,7 @@ showNumberP1:
    push rbp
    mov  rbp, rsp
    
-    push ax ;n
+   push ax ;n
    push rbx ;divisor
    push rdx; resto
    push si; i
@@ -251,9 +251,8 @@ showNumberP1:
          ; EAX / EBX
          div ebx 
          ;el cociente queda en EAX
-         ;el resto en el primer bit de DX(dl)
-         ; Sumar 0 al residuo (Convertir a ASCII)  
-         add dl,'0'
+         ;el resto en el primer bit de DX(dl)         
+         add dl,'0'; Sumar 0 al residuo (Convertir a ASCII)  
          mov BYTE[charac], dl
       fin_if:
    
@@ -299,7 +298,6 @@ showNumberP1:
 updateBoardP1:
    push rbp
    mov  rbp, rsp
-   
    
   ;************
    push rax; dividendo/cociente eax
@@ -366,7 +364,6 @@ updateBoardP1:
    pop rbp
    ret
 
-
 ;;;;;      
 ; Rotar a la derecha la matriz (m), sobre la matriz (mRotated). 
 ; La primera fila pasa a ser la cuarta columna, la segunda fila pasa 
@@ -392,15 +389,16 @@ updateBoardP1:
 rotateMatrixRP1:
    push rbp
    mov  rbp, rsp
-   
+   ;***
    push rax ; contador 0 hasta 15
-push rbx ; contador j  3 hasta 0 para calculo de transposicion
-push rcx ; contador k posicion ciclo 0-3 
-push rdx ; contenido aux
-push rsi; calculo direccion
+   push rbx ; contador j  3 hasta 0 para calculo de transposicion
+   push rcx ; contador k posicion ciclo 0-3 
+   push rdx ; contenido aux
+   push rsi; calculo direccion
 
    mov eax, 0
-   mov rbx, DimMatrix
+   mov ebx, DimMatrix
+   mov ecx,0
    mov rsi,0
 
    reset_k:
@@ -410,9 +408,7 @@ push rsi; calculo direccion
 
    ;copiar matriz
    mov dx, WORD[m+eax*2] ; copiar contenido  en dx
-   mov  si,cx ;  calcuar desplazamiento
-   imul si,DimMatrix; 
-   add  si, bx ; 
+   lea  esi , [ecx*DimMatrix+ebx]
    mov [mRotated +esi*2],dx; copiar contenido a posicion matriz  
    
    inc ax
@@ -432,12 +428,9 @@ push rsi; calculo direccion
    pop rbx
    pop rax
    ;***
-   
    mov rsp, rbp
    pop rbp
    ret
-
-
 ;;;;;  
 ; Copiar los valores de la matriz (mRotated) a la matriz (m).
 ; La matriz (mRotated) no se tiene que modificar, 
@@ -456,8 +449,8 @@ copyMatrixP1:
    mov  rbp, rsp
    
    ;***************
- push rax; aux
- push rbx; indice matriz
+   push rax; aux
+   push rbx; indice matriz
 
    mov ebx, 0 
    copiar:
@@ -471,11 +464,9 @@ copyMatrixP1:
    pop rax
 ;*************
    
-   
    mov rsp, rbp
    pop rbp
    ret
-
 
 ;;;;;  
 ; Desplazar a la derecha los números de cada fila de la matriz (m), 
@@ -505,59 +496,34 @@ shiftNumbersRP1:
    mov  rbp, rsp
 
 ;***
-push rax ; i
-push rbx ; j 
-push rcx ; k
-push rsi ;aux
-push rdi; aux2
-push rdx ; valor matriz
-
-push rax ; i
-push rbx ; j 
-push rcx ; k
-push rsi ;aux indice i
-push rdi; aux2
-push rdx ; valor matriz
+   push rax ; i
+   push rbx ; j 
+   push rcx ; k
+   push rsi ;aux indice i
+   push rdi; aux contenido
 
 ;inicializacion 
-    mov rax, DimMatrix
-    dec rax ; se usa DimMatrix-1
-    mov rbx, rax
-    mov rcx,0
-    mov rsi,0
-    mov rdi,0
-    mov rdx,0
+    mov eax, DimMatrix
+    dec eax ; se usa DimMatrix-1
+    mov ebx, eax
+    mov ecx,0
+    mov esi,0
+    mov edi,0
+    
 ;******
 out_iter:
-    inner_iter:
-        ;if (m[i][j] == 0)
-        ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
-
-        ;;****************UTILIZA 
-        ;;;RDX DX PARA GUARDAR EL VALOR DE LA MATRIZ
-        ;;;RSI SI como indice matriz AUXILIAR de RAX
-        ;;;;;
-        mov si,ax    ;<-- 3
-        imul si,4    ;<-- 3x4=12
-        add si,bx    ;<-- 12 +3=15
-        mov dx,word[m+esi*2]
-        cmp word[m+esi*2],0 ;
-        
-        ;;****************UTILIZA 
-        ;;;RCX cx como valor k
-        ;;;RSI SI 
-        ;;;;;
-
+    inner_iter: ;if (m[i][j] == 0)        
+        lea esi, [eax*DimMatrix+ebx];ubicar la posicion en la matriz columna+4*fila ;2(4x+y)        
+        cmp word[m+esi*2],0 ;        
         jne endif_ij_not_0; jump if (m[i][j] != 0) 
             mov cx,bx      
             dec cx ;k = j-1;
             k_while:
                 cmp cx,0      ;while (k>=0 && m[i][k]==0) k--;
                 jl end_k_while  ;1. k<0 salta        
-                ;ubicar la posicion en la matriz columna+4*fila                
-                call nextElement
-                cmp word[m+esi*2],0  ;2. m[i][k]==0)
 
+                lea esi, [eax*DimMatrix+ecx] ;ubicar la posicion en la matriz columna+4*fila                
+                cmp word[m+esi*2],0  ;2. m[i][k]==0)
                 jne end_k_while ; k>=0 pero m[i][k]!=0
                 dec cx        ;k--
                 jmp k_while
@@ -567,18 +533,16 @@ out_iter:
                 mov bx,0 ;  j=0
                 jmp endif_ij_not_0
             else_k_eq: ;m[i][j]=m[i][k]; ;se calcula m[i][k]                 
-                call nextElement
+                
+                lea esi, [eax* DimMatrix+ecx]                
                 mov di,word[m+esi*2]   ; se guarda el valor de m[i][k] en di
                       ; se calcula mov m[i][j]  
-                mov si,ax   ; guardamos la fila
-                imul si,4   ;la multiplicamos x 4
-                add si,bx  
+                lea esi, [eax*DimMatrix+ebx]
                 mov word[m+esi*2],di ; m[i][j]=di                 
-                call nextElement;m[i][k]= 0; 
+                lea esi,[eax*DimMatrix+ecx]
                 mov word[m+esi*2],0  ;2. m[i][k]==0)
-                mov BYTE[state],BYTE '2' ;state='2';
+                mov BYTE[state], '2' ;state='2';
         endif_ij_not_0:
-
         dec bx
         cmp bx,0
         jg inner_iter
@@ -590,26 +554,15 @@ out_iter:
     jge out_iter
 fin_out_iter:
 
-pop rdx
-pop rdi
-pop rsi 
-pop rcx
-pop rbx
-pop rax
+   pop rdi
+   pop rsi 
+   pop rcx
+   pop rbx
+   pop rax
 ;******
-   
-   
    mov rsp, rbp
    pop rbp
-   ret
-;******
-  nextElement:
-
-                mov si,ax   ; guardamos la fila
-                imul si,DimMatrix     ;la multiplicamos x 4
-                add si,cx  
-
-ret    
+   ret   
 ;******
 ;;;;;  
 ; Emparejar números iguales desde la derecha de la matriz (m) y acumular 
@@ -650,41 +603,34 @@ addPairsRP1:
    push rdi; aux2
 
    ;inicializacion 
-   mov rax, DimMatrix
-   dec rax ; se usa DimMatrix-1
-   mov rbx, rax
+   mov eax, DimMatrix -1
+   ;dec eax ; se usa DimMatrix-1
+   mov ebx, eax
    mov ecx,0
-   mov rsi,0
-   mov rdi,0; 
+   mov esi,0
+   mov edi,0; 
 
    out_iterPairs:
       inner_iterPairs:
             ;enunciar condicion 1 if (m[i][j] != 0)        
-            mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
-            imul si,DimMatrix    
-            add si,bx    
+            lea esi , [eax*DimMatrix+ebx]
             mov di,word[m+esi*2] ; m[i][j]
             cmp di,0 ; (m[i][j] <--> 0)
-            ;enunciar condicion 1
+          
             je eif_ij_not_0; jump if not (m[i][j] != 0) 
-            ;enunciar condicion 2   (m[i][j]==m[i][j-1]
-            call prevPointer
-            cmp di,word[m+esi*2]
+            ;enunciar condicion 2                                                   
+            cmp di,word[m+(esi-1)*2];(m[i][j]==m[i][j-1]
+
             jne eif_ij_not_0 ; si no se cumple la condicion 2 saltar  
-                  imul di,2      
-                  mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
-                  imul si,DimMatrix    
-                  add si,bx    
-                  mov word[m+esi*2],di   ; asignar m[i][j]  = m[i][j]*2;               
-                  call prevPointer
-                  mov word[m+esi*2],0   ; m[i][j-1]= 0;
+                  imul di,2                        
+                  lea esi,[eax*DimMatrix+ebx] ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
+                  mov word[m+esi*2],di   ; asignar m[i][j]  = m[i][j]*2;                                 
+                  mov word[m+(esi-1)*2],0   ; m[i][j-1]= 0;
                   add ecx,edi; p = p + m[i][j];
                
          eif_ij_not_0:
-
          dec bx
-         cmp bx,0
-         jg inner_iterPairs
+         jnz inner_iterPairs
       fin_inner_iterPairs:
       mov bx,DimMatrix
       dec bx
@@ -709,13 +655,6 @@ addPairsRP1:
    mov rsp, rbp
    pop rbp
    ret
-   
-prevPointer:
-   mov si,ax    ;ubicar la posicion en la matriz columna+4*fila ;2(4x+y)
-   imul si,DimMatrix    
-   add si,bx    
-   dec si  ; asignacion sobre elemento anterior
-ret
 
 ;;;;;; 
 ; Esta subrutina se da hecha. NO LA PODÉIS MODIFICAR.
